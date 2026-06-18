@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  # ═══════════════════════════════════════════════
+  # Python 测试 (小车端)
+  # ═══════════════════════════════════════════════
+  python-tests:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: src/robot
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest numpy
+
+      - name: Run tests
+        run: python -m pytest -v
+
+  # ═══════════════════════════════════════════════
+  # Python Lint (ruff)
+  # ═══════════════════════════════════════════════
+  python-lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ruff check
+        uses: astral-sh/ruff-action@v1
+        with:
+          args: 'check'
+          src: './src/robot'
+
+  # ═══════════════════════════════════════════════
+  # Android 测试 + Lint (App 端)
+  # ═══════════════════════════════════════════════
+  android-tests:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: src/app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('src/app/**/*.gradle*', 'src/app/**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Grant gradlew execute permission
+        run: chmod +x gradlew
+
+      - name: ktlint check
+        run: ./gradlew ktlintCheck
+
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest
+
+      - name: Publish test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Android Test Report
+          path: 'src/app/app/build/test-results/testDebugUnitTest/*.xml'
+          reporter: java-junit
