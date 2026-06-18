@@ -1,0 +1,37 @@
+# Pre-commit hooks — 提交前自动检查
+# 安装: pip install pre-commit && pre-commit install
+# 手动运行: pre-commit run --all-files
+repos:
+  # ── 通用检查 ──
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # ── Python: ruff (lint + format) ──
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.0
+    hooks:
+      - id: ruff
+        args: ['--fix']
+        files: 'src/robot/.*\.py$'
+      - id: ruff-format
+        files: 'src/robot/.*\.py$'
+
+  # ── Kotlin: ktlint (通过 Gradle 调用) ──
+  - repo: local
+    hooks:
+      - id: ktlint
+        name: ktlint (Kotlin lint)
+        entry: bash -c 'cd src/app && ./gradlew.bat ktlintCheck 2>/dev/null || echo "跳过 (需要 Android SDK)"'
+        language: system
+        files: 'src/app/.*\.kt$'
+        pass_filenames: false

@@ -9,10 +9,11 @@
 """
 
 import math
+
 import numpy as np
 
-
 # ── 从 fence_follower.py 复制的核心算法 (保持与生产代码一致) ──
+
 
 def pca_line(xy: np.ndarray):
     """PCA 总体最小二乘直线拟合 (ax + by + c = 0) — 与 fence_follower.py 一致"""
@@ -29,9 +30,9 @@ def pca_line(xy: np.ndarray):
     return (float(a), float(b), float(c))
 
 
-def ransac_line(xy: np.ndarray, min_samples: int = 10,
-                residual_threshold: float = 0.05,
-                max_trials: int = 100):
+def ransac_line(
+    xy: np.ndarray, min_samples: int = 10, residual_threshold: float = 0.05, max_trials: int = 100
+):
     """RANSAC 直线拟合 — 与 fence_follower.py 一致"""
     n = len(xy)
     if n < min_samples:
@@ -64,6 +65,7 @@ def ransac_line(xy: np.ndarray, min_samples: int = 10,
 # ═══════════════════════════════════════════════════
 # pca_line — PCA 总体最小二乘直线拟合
 # ═══════════════════════════════════════════════════
+
 
 class TestPcaLine:
     """PCA 直线拟合: ax + by + c = 0"""
@@ -137,14 +139,27 @@ class TestPcaLine:
 # ransac_line — RANSAC 直线拟合
 # ═══════════════════════════════════════════════════
 
+
 class TestRansacLine:
     """RANSAC 鲁棒直线拟合"""
 
     def test_clean_line_returns_good_fit(self):
         """无离群点时正常工作"""
-        xy = np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0], [3.0, 3.0],
-                       [4.0, 4.0], [5.0, 5.0], [6.0, 6.0], [7.0, 7.0],
-                       [8.0, 8.0], [9.0, 9.0], [10.0, 10.0]])
+        xy = np.array(
+            [
+                [0.0, 0.0],
+                [1.0, 1.0],
+                [2.0, 2.0],
+                [3.0, 3.0],
+                [4.0, 4.0],
+                [5.0, 5.0],
+                [6.0, 6.0],
+                [7.0, 7.0],
+                [8.0, 8.0],
+                [9.0, 9.0],
+                [10.0, 10.0],
+            ]
+        )
         result = ransac_line(xy, min_samples=5, residual_threshold=0.05)
         assert result is not None
         a, b, c = result
@@ -155,10 +170,7 @@ class TestRansacLine:
         """RANSAC 忽略离群点"""
         rng = np.random.default_rng(42)
         # 9 个内点: y = 0 (水平线)
-        inliers = np.column_stack([
-            np.linspace(0, 8, 9),
-            np.zeros(9)
-        ])
+        inliers = np.column_stack([np.linspace(0, 8, 9), np.zeros(9)])
         # 10 个离群点: 散乱
         outliers = rng.uniform(-5, 5, (10, 2))
         xy = np.vstack([inliers, outliers])
@@ -173,16 +185,12 @@ class TestRansacLine:
         """大量离群点时仍能找到线 (50% 离群点)"""
         rng = np.random.default_rng(42)
         # 25 个内点: x = 2 (垂直线)
-        inliers = np.column_stack([
-            np.full(25, 2.0),
-            np.linspace(0, 24, 25)
-        ])
+        inliers = np.column_stack([np.full(25, 2.0), np.linspace(0, 24, 25)])
         # 25 个离群点 (50/50)
         outliers = rng.uniform(-5, 5, (25, 2))
         xy = np.vstack([inliers, outliers])
 
-        result = ransac_line(xy, min_samples=8, residual_threshold=0.1,
-                             max_trials=500)
+        result = ransac_line(xy, min_samples=8, residual_threshold=0.1, max_trials=500)
         assert result is not None
         a, b, c = result
         # 应拟合垂直线: |b| 应远小于 |a|
@@ -222,6 +230,7 @@ class TestRansacLine:
 # ═══════════════════════════════════════════════════
 # 角度/距离计算 (模拟 FenceFollower 中的逻辑)
 # ═══════════════════════════════════════════════════
+
 
 class TestFenceGeometry:
     """围栏检测几何计算"""

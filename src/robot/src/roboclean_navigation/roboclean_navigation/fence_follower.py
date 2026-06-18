@@ -14,11 +14,12 @@
 """
 
 import math
+
 import numpy as np
 import rclpy
+from geometry_msgs.msg import Twist
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool, Float32, String
 
 
@@ -35,7 +36,7 @@ def pca_line(xy: np.ndarray) -> tuple:
     # SVD 分解: U @ diag(S) @ V^T
     # V 的行是主成分方向
     _, _, vh = np.linalg.svd(centered, full_matrices=False)
-    normal = vh[-1]               # 最小奇异值对应的方向 = 法向量
+    normal = vh[-1]  # 最小奇异值对应的方向 = 法向量
     a, b = normal[0], normal[1]
     c = -(a * mean[0] + b * mean[1])
     # 归一化符号: 让 c 在围栏侧为正
@@ -44,9 +45,9 @@ def pca_line(xy: np.ndarray) -> tuple:
     return (float(a), float(b), float(c))
 
 
-def ransac_line(xy: np.ndarray, min_samples: int = 10,
-                residual_threshold: float = 0.05,
-                max_trials: int = 100) -> tuple | None:
+def ransac_line(
+    xy: np.ndarray, min_samples: int = 10, residual_threshold: float = 0.05, max_trials: int = 100
+) -> tuple | None:
     """
     自实现 RANSAC 直线拟合 — 替代 sklearn.linear_model.RANSACRegressor
 
@@ -177,12 +178,11 @@ class FenceFollower(Node):
         self.angle_error: float = 0.0
 
         # ── 订阅 ──
-        self.scan_sub = self.create_subscription(
-            LaserScan, '/scan', self.scan_callback, 10)
+        self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 10)
         self.ultra_sub = self.create_subscription(
-            Float32, '/ultrasonic/fence', self.ultrasonic_callback, 10)
-        self.nav_sub = self.create_subscription(
-            Bool, '/nav/active', self._nav_active_callback, 10)
+            Float32, '/ultrasonic/fence', self.ultrasonic_callback, 10
+        )
+        self.nav_sub = self.create_subscription(Bool, '/nav/active', self._nav_active_callback, 10)
 
         # ── 发布 ──
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
@@ -194,7 +194,8 @@ class FenceFollower(Node):
 
         self.get_logger().info(
             f'围栏跟随已启动 | 侧: {self.fence_side} '
-            f'| 目标距: {self.target_dist}m | 速度: {self.fwd_speed}m/s')
+            f'| 目标距: {self.target_dist}m | 速度: {self.fwd_speed}m/s'
+        )
 
     # ═════════════════════════════════════════════════════════
     # LiDAR 围栏检测
@@ -308,8 +309,7 @@ class FenceFollower(Node):
         if self.lost_fence_count <= self.inertia_hold:
             self._inertia_hold()
         else:
-            self.get_logger().warn(
-                f'围栏丢失 {self.lost_fence_count}帧 惯性超时 → 停车')
+            self.get_logger().warn(f'围栏丢失 {self.lost_fence_count}帧 惯性超时 → 停车')
             self._stop(reset=True)
 
     def _pid_control(self) -> None:
@@ -318,9 +318,11 @@ class FenceFollower(Node):
         lat_derivative = (self.lateral_error - self.lat_prev_error) / 0.05
         self.lat_prev_error = self.lateral_error
 
-        ang_from_lat = (self.kp_lat * self.lateral_error +
-                        self.ki_lat * self.lat_integral +
-                        self.kd_lat * lat_derivative)
+        ang_from_lat = (
+            self.kp_lat * self.lateral_error
+            + self.ki_lat * self.lat_integral
+            + self.kd_lat * lat_derivative
+        )
         ang_from_angle = self.kp_ang * self.angle_error
         angular = ang_from_lat + ang_from_angle
         angular = max(-self.max_ang, min(self.max_ang, angular))
@@ -334,10 +336,13 @@ class FenceFollower(Node):
         t.angular.z = angular
         self.cmd_pub.publish(t)
         self.drum_pub.publish(Bool(data=True))
-        self.status_pub.publish(String(
-            data=f'LIDAR|lat={self.lateral_error:.3f}m '
-                 f'ang={math.degrees(self.angle_error):.1f}deg '
-                 f'v={linear:.2f}m/s'))
+        self.status_pub.publish(
+            String(
+                data=f'LIDAR|lat={self.lateral_error:.3f}m '
+                f'ang={math.degrees(self.angle_error):.1f}deg '
+                f'v={linear:.2f}m/s'
+            )
+        )
 
     def _ultrasonic_control(self, ultra_err: float) -> None:
         """超声波单独跟随 (仅距离修正, 无角度)"""
@@ -350,9 +355,12 @@ class FenceFollower(Node):
         t.angular.z = angular
         self.cmd_pub.publish(t)
         self.drum_pub.publish(Bool(data=True))
-        self.status_pub.publish(String(
-            data=f'ULTRA|dist={self.ultrasonic_distance:.2f}m '
-                 f'err={ultra_err:.3f}m v={linear:.2f}m/s'))
+        self.status_pub.publish(
+            String(
+                data=f'ULTRA|dist={self.ultrasonic_distance:.2f}m '
+                f'err={ultra_err:.3f}m v={linear:.2f}m/s'
+            )
+        )
 
     def _inertia_hold(self) -> None:
         """惯性保持 (围栏短暂丢失)"""
@@ -360,8 +368,7 @@ class FenceFollower(Node):
             self.inertia_active = True
             self.inertia_linear = self.fwd_speed
             self.inertia_angular = self._get_last_angular()
-            self.get_logger().info(
-                f'围栏+超声波均丢失 → 惯性 {self.inertia_hold}帧')
+            self.get_logger().info(f'围栏+超声波均丢失 → 惯性 {self.inertia_hold}帧')
 
         self.inertia_linear *= self.inertia_decel
         t = Twist()
@@ -369,13 +376,15 @@ class FenceFollower(Node):
         t.angular.z = self.inertia_angular
         self.cmd_pub.publish(t)
         self.drum_pub.publish(Bool(data=True))
-        self.status_pub.publish(String(
-            data=f'INERTIA|{self.lost_fence_count}/{self.inertia_hold} '
-                 f'v={self.inertia_linear:.2f}m/s'))
+        self.status_pub.publish(
+            String(
+                data=f'INERTIA|{self.lost_fence_count}/{self.inertia_hold} '
+                f'v={self.inertia_linear:.2f}m/s'
+            )
+        )
 
     def _get_last_angular(self) -> float:
-        ang = (self.kp_lat * self.lateral_error +
-               self.kp_ang * self.angle_error)
+        ang = self.kp_lat * self.lateral_error + self.kp_ang * self.angle_error
         return float(max(-self.max_ang, min(self.max_ang, ang)))
 
     def _stop(self, reset: bool = False) -> None:
@@ -396,6 +405,7 @@ def main(args=None):
     rclpy.init(args=args)
     rclpy.spin(FenceFollower())
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

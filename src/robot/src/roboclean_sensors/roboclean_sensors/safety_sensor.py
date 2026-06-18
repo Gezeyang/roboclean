@@ -13,21 +13,21 @@
 发布: /safety/stop  /safety/warning  /ultrasonic/fence
 """
 
-import time
 import threading
-from typing import Optional
+import time
+
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Bool, String, Float32
+from std_msgs.msg import Bool, Float32, String
 
 # GPIO 引脚（树莓派 4B BCM 编号）
-PIN_BUMPER_LEFT: int  = 17   # 安全触边左
-PIN_BUMPER_RIGHT: int = 27   # 安全触边右
-PIN_EMG_BUTTON: int   = 22   # 急停按钮
+PIN_BUMPER_LEFT: int = 17  # 安全触边左
+PIN_BUMPER_RIGHT: int = 27  # 安全触边右
+PIN_EMG_BUTTON: int = 22  # 急停按钮
 
 PIN_ULTRASONIC_FRONT: tuple[int, int] = (23, 24)
-PIN_ULTRASONIC_REAR:  tuple[int, int] = (25, 8)
-PIN_ULTRASONIC_LEFT:  tuple[int, int] = (6,  5)
+PIN_ULTRASONIC_REAR: tuple[int, int] = (25, 8)
+PIN_ULTRASONIC_LEFT: tuple[int, int] = (6, 5)
 PIN_ULTRASONIC_RIGHT: tuple[int, int] = (16, 12)
 
 # 安全距离 (米)
@@ -57,7 +57,7 @@ class SafetySensorNode(Node):
         self._ultra_measuring: bool = False
         self._ultra_pulse_start: float = 0.0
         self._ultra_pulse_end: float = 0.0
-        self._ultra_distance: Optional[float] = None
+        self._ultra_distance: float | None = None
 
         # 发布
         self.safety_pub = self.create_publisher(Bool, '/safety/stop', 10)
@@ -72,10 +72,11 @@ class SafetySensorNode(Node):
     def _init_gpio(self) -> None:
         try:
             import RPi.GPIO as GPIO
+
             GPIO.setmode(GPIO.BCM)
-            GPIO.setup(PIN_BUMPER_LEFT,  GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            GPIO.setup(PIN_BUMPER_LEFT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.setup(PIN_BUMPER_RIGHT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.setup(PIN_EMG_BUTTON,   GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            GPIO.setup(PIN_EMG_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             self.GPIO = GPIO
             self.get_logger().info('GPIO 已初始化')
         except ImportError:
@@ -85,22 +86,22 @@ class SafetySensorNode(Node):
     def check_safety(self) -> None:
         """检查安全状态 (20Hz, 非阻塞)"""
         trigger: bool = False
-        reason: str = ""
+        reason: str = ''
 
         if self.use_hw and self.GPIO is not None:
             GPIO = self.GPIO
             if GPIO.input(PIN_BUMPER_LEFT) == GPIO.LOW:
                 trigger = True
-                reason = "安全触边左触发"
+                reason = '安全触边左触发'
             if GPIO.input(PIN_BUMPER_RIGHT) == GPIO.LOW:
                 trigger = True
                 if not reason:
-                    reason = "安全触边右触发"
+                    reason = '安全触边右触发'
                 else:
-                    reason = "安全触边双边触发"
+                    reason = '安全触边双边触发'
             if GPIO.input(PIN_EMG_BUTTON) == GPIO.LOW:
                 trigger = True
-                reason = reason or "急停按钮按下"
+                reason = reason or '急停按钮按下'
 
             # 读取侧方超声波 (非阻塞状态机)
             self._read_ultrasonic_nonblocking()
@@ -160,7 +161,7 @@ class SafetySensorNode(Node):
             # 计算距离
             duration = self._ultra_pulse_end - self._ultra_pulse_start
             distance = duration * 17150.0  # cm → 声速 343m/s / 2
-            if 2.0 < distance < 600.0:    # 有效范围 2cm-6m
+            if 2.0 < distance < 600.0:  # 有效范围 2cm-6m
                 self._ultra_distance = distance
                 self.ultra_fence_pub.publish(Float32(data=distance / 100.0))  # cm → m
 
@@ -179,6 +180,7 @@ def main(args=None):
     rclpy.init(args=args)
     rclpy.spin(SafetySensorNode())
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

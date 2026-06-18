@@ -10,16 +10,12 @@ CANopen 驱动模块 — ZBLD.C20-800LRC
 
 from __future__ import annotations
 
-from typing import Optional
-import struct
-import time
 import threading
-import can
+
 import canopen
 
-
 # ── 共享 Network 单例 ──
-_shared_network: Optional[canopen.Network] = None
+_shared_network: canopen.Network | None = None
 _network_lock = threading.Lock()
 
 
@@ -43,44 +39,48 @@ def disconnect_shared_network() -> None:
 
 
 # ── 寄存器地址 (从说明书) ──
-REG_CONTROL    = 0x2000  # 控制命令
-REG_SPEED_SET  = 0x2001  # 设定速度 (RPM)
+REG_CONTROL = 0x2000  # 控制命令
+REG_SPEED_SET = 0x2001  # 设定速度 (RPM)
 REG_POLE_PAIRS = 0x2002  # 极对数
-REG_ACC_TIME   = 0x2003  # 加速时间 (0.1S)
-REG_DEC_TIME   = 0x2004  # 减速时间 (0.1S)
-REG_CTRL_MODE  = 0x2005  # 控制模式
-REG_CMD_SRC    = 0x2006  # 运行指令选择
-REG_SPEED_SRC  = 0x2007  # 速度给定选择
-REG_NODE_ID    = 0x2008  # 通讯地址
-REG_BAUDRATE   = 0x2009  # 波特率
-REG_STOP_MODE  = 0x2012  # 停机方式
+REG_ACC_TIME = 0x2003  # 加速时间 (0.1S)
+REG_DEC_TIME = 0x2004  # 减速时间 (0.1S)
+REG_CTRL_MODE = 0x2005  # 控制模式
+REG_CMD_SRC = 0x2006  # 运行指令选择
+REG_SPEED_SRC = 0x2007  # 速度给定选择
+REG_NODE_ID = 0x2008  # 通讯地址
+REG_BAUDRATE = 0x2009  # 波特率
+REG_STOP_MODE = 0x2012  # 停机方式
 
-REG_STATUS1    = 0x2100  # 状态字1
-REG_STATUS2    = 0x2101  # 状态字2
+REG_STATUS1 = 0x2100  # 状态字1
+REG_STATUS2 = 0x2101  # 状态字2
 REG_FAULT_CODE = 0x2102  # 故障码
-REG_DRIVE_ID   = 0x2103  # 驱动器识别
+REG_DRIVE_ID = 0x2103  # 驱动器识别
 
-REG_ACT_SPEED  = 0x2202  # 实际转速 (RPM)
-REG_ACT_CURRENT= 0x2203  # 实际电流 (0.1A)
-REG_BUS_VOLT   = 0x2204  # 母线电压 (0.1V)
-REG_TEMP       = 0x2205  # 模块温度 (C)
+REG_ACT_SPEED = 0x2202  # 实际转速 (RPM)
+REG_ACT_CURRENT = 0x2203  # 实际电流 (0.1A)
+REG_BUS_VOLT = 0x2204  # 母线电压 (0.1V)
+REG_TEMP = 0x2205  # 模块温度 (C)
 
 # ── 控制命令 ──
-CMD_FWD_RUN    = 0x0001  # 正转
-CMD_REV_RUN    = 0x0002  # 反转
-CMD_FWD_JOG    = 0x0003  # 正转点动
-CMD_REV_JOG    = 0x0004  # 反转点动
-CMD_STOP       = 0x0005  # 减速停机
-CMD_EMG_STOP   = 0x0006  # 紧急停止
-CMD_FAULT_RST  = 0x0007  # 故障复位
+CMD_FWD_RUN = 0x0001  # 正转
+CMD_REV_RUN = 0x0002  # 反转
+CMD_FWD_JOG = 0x0003  # 正转点动
+CMD_REV_JOG = 0x0004  # 反转点动
+CMD_STOP = 0x0005  # 减速停机
+CMD_EMG_STOP = 0x0006  # 紧急停止
+CMD_FAULT_RST = 0x0007  # 故障复位
 
 
 class C20Driver:
     """ZBLD.C20-800LRC CANopen 驱动封装"""
 
-    def __init__(self, node_id: int, channel: str = 'can0',
-                 eds_file: Optional[str] = None,
-                 network: Optional[canopen.Network] = None):
+    def __init__(
+        self,
+        node_id: int,
+        channel: str = 'can0',
+        eds_file: str | None = None,
+        network: canopen.Network | None = None,
+    ):
         self.node_id = node_id
 
         # 使用共享 Network (避免多节点各自创建导致总线冲突)
@@ -106,7 +106,7 @@ class C20Driver:
 
     def configure_for_comm_control(self):
         """配置为通讯控制模式"""
-        self.node.sdo[REG_CMD_SRC].raw = 2   # 运行指令=通讯
+        self.node.sdo[REG_CMD_SRC].raw = 2  # 运行指令=通讯
         self.node.sdo[REG_SPEED_SRC].raw = 3  # 速度给定=Modbus通讯
 
     # ── 运动控制 ──
@@ -189,11 +189,12 @@ class C20Driver:
 class DriveSystem:
     """三驱动器系统 (左轮 + 右轮 + 清洁刷) — 共享 CANopen Network"""
 
-    def __init__(self, left_id: int = 1, right_id: int = 2, brush_id: int = 3,
-                 channel: str = 'can0'):
+    def __init__(
+        self, left_id: int = 1, right_id: int = 2, brush_id: int = 3, channel: str = 'can0'
+    ):
         # 三个驱动器共享同一个 Network
         network = get_shared_network(channel)
-        self.left  = C20Driver(left_id, channel, network=network)
+        self.left = C20Driver(left_id, channel, network=network)
         self.right = C20Driver(right_id, channel, network=network)
         self.brush = C20Driver(brush_id, channel, network=network)
 

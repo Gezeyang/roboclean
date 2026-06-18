@@ -1,0 +1,24 @@
+[tool.ruff]
+# Python 代码检查规则
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort (import 排序)
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # 行长放宽到 100
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint.isort]
+known-first-party = ["roboclean_driver", "roboclean_sensors", "roboclean_navigation", "roboclean_bt", "roboclean_bringup"]

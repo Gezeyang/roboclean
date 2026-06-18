@@ -12,12 +12,12 @@ RoboClean 主启动文件 — 全节点启动
   - SLAM (slam_toolbox)
 """
 
-from launch import LaunchDescription
-from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.substitutions import LaunchConfiguration
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 import os
+
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -26,12 +26,10 @@ def generate_launch_description():
 
     # ── 启动参数 ──
     can_channel_arg = DeclareLaunchArgument(
-        'can_channel', default_value='can0',
-        description='CAN 接口名称'
+        'can_channel', default_value='can0', description='CAN 接口名称'
     )
     use_hardware_arg = DeclareLaunchArgument(
-        'use_hardware', default_value='false',
-        description='启用真实硬件 (GPIO / CAN / 蓝牙)'
+        'use_hardware', default_value='false', description='启用真实硬件 (GPIO / CAN / 蓝牙)'
     )
 
     can_channel = LaunchConfiguration('can_channel')
@@ -43,9 +41,12 @@ def generate_launch_description():
         executable='motor_controller',
         name='motor_controller',
         output='screen',
-        parameters=[os.path.join(config_dir, 'robot_params.yaml'), {
-            'can_channel': can_channel,
-        }],
+        parameters=[
+            os.path.join(config_dir, 'robot_params.yaml'),
+            {
+                'can_channel': can_channel,
+            },
+        ],
     )
 
     # ── 编码器里程计 ──
@@ -54,9 +55,12 @@ def generate_launch_description():
         executable='encoder_odom',
         name='encoder_odom',
         output='screen',
-        parameters=[os.path.join(config_dir, 'robot_params.yaml'), {
-            'can_channel': can_channel,
-        }],
+        parameters=[
+            os.path.join(config_dir, 'robot_params.yaml'),
+            {
+                'can_channel': can_channel,
+            },
+        ],
     )
 
     # ── 安全传感器 ──
@@ -65,9 +69,11 @@ def generate_launch_description():
         executable='safety_sensor',
         name='safety_sensor',
         output='screen',
-        parameters=[{
-            'use_hardware': use_hardware,
-        }],
+        parameters=[
+            {
+                'use_hardware': use_hardware,
+            }
+        ],
     )
 
     # ── 围栏跟随 (推料核心) ──
@@ -76,9 +82,12 @@ def generate_launch_description():
         executable='fence_follower',
         name='fence_follower',
         output='screen',
-        parameters=[os.path.join(config_dir, '..', '..', 'roboclean_navigation',
-                                  'config', 'nav2_params.yaml'),
-                     os.path.join(config_dir, 'robot_params.yaml')],
+        parameters=[
+            os.path.join(
+                config_dir, '..', '..', 'roboclean_navigation', 'config', 'nav2_params.yaml'
+            ),
+            os.path.join(config_dir, 'robot_params.yaml'),
+        ],
     )
 
     # ── 途经点导航 (App 路线模式) ──
@@ -104,9 +113,11 @@ def generate_launch_description():
         executable='bt_server',
         name='bt_server',
         output='screen',
-        parameters=[{
-            'bt_name': 'RoboClean-001',
-        }],
+        parameters=[
+            {
+                'bt_name': 'RoboClean-001',
+            }
+        ],
     )
 
     # ── 镭神 N10P LiDAR ──
@@ -115,24 +126,28 @@ def generate_launch_description():
         executable='lslidar_driver_node',
         name='lslidar',
         output='screen',
-        parameters=[{
-            'serial_port': '/dev/ttyUSB0',
-            'serial_baudrate': 460800,
-            'frame_id': 'laser_frame',
-            'lidar_type': 'n10p',
-            'add_multicast': False,
-        }],
+        parameters=[
+            {
+                'serial_port': '/dev/ttyUSB0',
+                'serial_baudrate': 460800,
+                'frame_id': 'laser_frame',
+                'lidar_type': 'n10p',
+                'add_multicast': False,
+            }
+        ],
     )
 
-    return LaunchDescription([
-        can_channel_arg,
-        use_hardware_arg,
-        motor_controller,
-        encoder_odom,
-        safety_sensor,
-        fence_follower,
-        waypoint_navigator,
-        charging_dock,
-        bt_server,
-        n10p_lidar,
-    ])
+    return LaunchDescription(
+        [
+            can_channel_arg,
+            use_hardware_arg,
+            motor_controller,
+            encoder_odom,
+            safety_sensor,
+            fence_follower,
+            waypoint_navigator,
+            charging_dock,
+            bt_server,
+            n10p_lidar,
+        ]
+    )

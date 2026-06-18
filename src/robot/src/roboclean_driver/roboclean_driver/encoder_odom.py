@@ -16,13 +16,13 @@
 from __future__ import annotations
 
 import math
-from typing import Optional
+
 import rclpy
-from rclpy.node import Node
-from nav_msgs.msg import Odometry
 from geometry_msgs.msg import TransformStamped
-from tf2_ros import TransformBroadcaster
+from nav_msgs.msg import Odometry
+from rclpy.node import Node
 from std_msgs.msg import Float32, String
+from tf2_ros import TransformBroadcaster
 
 from .canopen_driver import C20Driver, get_shared_network
 
@@ -41,10 +41,10 @@ class EncoderOdomNode(Node):
         self.declare_parameter('encoder_resolution', 131072)
 
         # ── 打滑检测阈值 ──
-        self.declare_parameter('max_accel_mss', 2.0)            # 最大线加速度
+        self.declare_parameter('max_accel_mss', 2.0)  # 最大线加速度
         self.declare_parameter('max_angular_accel_radss', 4.0)  # 最大角加速度
-        self.declare_parameter('max_slip_ratio', 0.30)          # 左右轮速比阈值
-        self.declare_parameter('max_instant_jump_m', 0.05)      # 单帧最大位移
+        self.declare_parameter('max_slip_ratio', 0.30)  # 左右轮速比阈值
+        self.declare_parameter('max_instant_jump_m', 0.05)  # 单帧最大位移
 
         # ── 标定修正系数 ──
         self.declare_parameter('wheel_radius_calib_left', 1.0)
@@ -66,7 +66,8 @@ class EncoderOdomNode(Node):
 
         self.get_logger().info(
             f'有效半径 L={self.radius*self.calib_left:.4f}m '
-            f'R={self.radius*self.calib_right:.4f}m 轮距={self.sep:.3f}m')
+            f'R={self.radius*self.calib_right:.4f}m 轮距={self.sep:.3f}m'
+        )
 
         # 连接驱动器（只读，共享 Network）
         network = get_shared_network(can_ch)
@@ -79,8 +80,8 @@ class EncoderOdomNode(Node):
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0
-        self.last_left_pos: Optional[float] = None
-        self.last_right_pos: Optional[float] = None
+        self.last_left_pos: float | None = None
+        self.last_right_pos: float | None = None
         self.total_distance = 0.0
         self.last_time = self.get_clock().now()
         self.last_vx = 0.0
@@ -108,7 +109,7 @@ class EncoderOdomNode(Node):
 
     # ── 编码器读取 ──
 
-    def _read_encoder_rad(self, driver: C20Driver) -> Optional[float]:
+    def _read_encoder_rad(self, driver: C20Driver) -> float | None:
         try:
             pos_raw = driver.node.sdo[self.ENCODER_REG].raw
             return (pos_raw / self.res) * 2.0 * math.pi / self.gear
@@ -139,20 +140,20 @@ class EncoderOdomNode(Node):
         d_left = left_rad - self.last_left_pos
         d_right = right_rad - self.last_right_pos
 
-        d_left_dist  = d_left * self.radius * self.calib_left
+        d_left_dist = d_left * self.radius * self.calib_left
         d_right_dist = d_right * self.radius * self.calib_right
 
         # ── 检测1: 瞬时跳跃 ──
         if abs(d_left_dist) > self.max_jump or abs(d_right_dist) > self.max_jump:
             self.get_logger().warn(
-                f'[JUMP] L={d_left_dist:.4f}m R={d_right_dist:.4f}m '
-                f'(>{self.max_jump}m) -> skip')
+                f'[JUMP] L={d_left_dist:.4f}m R={d_right_dist:.4f}m ' f'(>{self.max_jump}m) -> skip'
+            )
             self.jump_count += 1
             return
 
         # ── 检测2: 加速度超限 ──
         d_center = (d_left_dist + d_right_dist) / 2.0
-        d_theta  = (d_right_dist - d_left_dist) / self.sep
+        d_theta = (d_right_dist - d_left_dist) / self.sep
         vx = d_center / dt
         vth = d_theta / dt
         ax = (vx - self.last_vx) / dt
@@ -160,7 +161,8 @@ class EncoderOdomNode(Node):
 
         if abs(ax) > self.max_accel or abs(ath) > self.max_ang_accel:
             self.get_logger().warn(
-                f'[SLIP] ax={ax:.1f} ath={ath:.1f} (>{self.max_accel}/{self.max_ang_accel}) -> skip')
+                f'[SLIP] ax={ax:.1f} ath={ath:.1f} (>{self.max_accel}/{self.max_ang_accel}) -> skip'
+            )
             self.slip_count += 1
             self.last_left_pos = left_rad
             self.last_right_pos = right_rad
@@ -173,7 +175,8 @@ class EncoderOdomNode(Node):
         diff = abs(d_left_dist - d_right_dist)
         if avg > 0.001 and diff / avg > self.max_slip_ratio:
             self.get_logger().warn(
-                f'[RATIO] L/R diff ratio={diff/avg:.3f} (>{self.max_slip_ratio}) -> avg-only')
+                f'[RATIO] L/R diff ratio={diff/avg:.3f} (>{self.max_slip_ratio}) -> avg-only'
+            )
             d_left_dist = d_right_dist = d_center
             d_theta = 0.0
             self.slip_count += 1
@@ -233,13 +236,13 @@ class EncoderOdomNode(Node):
         j = self.jump_count / self.update_count * 100
         e = self.read_error_count / self.update_count * 100
         msg = (
-            f"Odom|N={self.update_count} "
-            f"slip={self.slip_count}({s:.1f}%) "
-            f"jump={self.jump_count}({j:.1f}%) "
-            f"err={self.read_error_count}({e:.1f}%) "
-            f"dist={self.total_distance:.2f}m "
-            f"xy=({self.x:.2f},{self.y:.2f}) "
-            f"yaw={math.degrees(self.theta):.1f}deg"
+            f'Odom|N={self.update_count} '
+            f'slip={self.slip_count}({s:.1f}%) '
+            f'jump={self.jump_count}({j:.1f}%) '
+            f'err={self.read_error_count}({e:.1f}%) '
+            f'dist={self.total_distance:.2f}m '
+            f'xy=({self.x:.2f},{self.y:.2f}) '
+            f'yaw={math.degrees(self.theta):.1f}deg'
         )
         self.diag_pub.publish(String(data=msg))
         if s > 5.0:
@@ -249,7 +252,7 @@ class EncoderOdomNode(Node):
 
     @staticmethod
     def _q(yaw: float) -> tuple[float, float, float, float]:
-        return (0.0, 0.0, math.sin(yaw/2), math.cos(yaw/2))
+        return (0.0, 0.0, math.sin(yaw / 2), math.cos(yaw / 2))
 
     def destroy_node(self) -> None:
         self.left.disconnect()
@@ -261,6 +264,7 @@ def main(args=None):
     rclpy.init(args=args)
     rclpy.spin(EncoderOdomNode())
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

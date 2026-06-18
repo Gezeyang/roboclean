@@ -6,15 +6,13 @@
 """
 
 import math
-import pytest
-
 
 # ═══════════════════════════════════════════════════
 # 运动学转换 (从 motor_controller.py 提取)
 # ═══════════════════════════════════════════════════
 
-WHEEL_RADIUS = 0.19       # m
-WHEEL_SEPARATION = 0.65   # m
+WHEEL_RADIUS = 0.19  # m
+WHEEL_SEPARATION = 0.65  # m
 GEAR_RATIO = 56.0
 MAX_RPM = 1500
 
@@ -37,7 +35,6 @@ def twist_to_rpm(v: float, w: float) -> tuple[int, int]:
 
 
 class TestKinematics:
-
     def test_straight_forward(self):
         """直行: v=0.3, w=0 → 左右轮同速"""
         left, right = twist_to_rpm(0.3, 0.0)
@@ -106,7 +103,6 @@ class TestKinematics:
 
 
 class TestSafetyLimits:
-
     def test_large_angular_velocity_doesnt_overflow(self):
         """大角速度不溢出"""
         left, right = twist_to_rpm(0.0, 10.0)

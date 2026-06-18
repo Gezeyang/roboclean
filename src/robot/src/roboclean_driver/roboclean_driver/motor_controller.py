@@ -16,11 +16,11 @@ from __future__ import annotations
 
 import math
 import time
-from typing import Optional
+
 import rclpy
-from rclpy.node import Node
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Float32, String, Bool
+from rclpy.node import Node
+from std_msgs.msg import Bool, Float32, String
 
 from .canopen_driver import DriveSystem
 
@@ -37,7 +37,7 @@ class MotorControllerNode(Node):
         self.declare_parameter('wheel_separation', 0.65)
         self.declare_parameter('max_rpm', 1500)
         self.declare_parameter('gear_ratio', 56.0)
-        self.declare_parameter('cmd_timeout_s', 0.5)            # 指令超时
+        self.declare_parameter('cmd_timeout_s', 0.5)  # 指令超时
         self.declare_parameter('rpm_deviation_warn_pct', 15.0)  # RPM 偏差告警阈值%
 
         can_ch = self.get_parameter('can_channel').value
@@ -70,8 +70,10 @@ class MotorControllerNode(Node):
         self.status_count = 0
 
         # ── 定时器 ──
-        self.status_timer = self.create_timer(0.1, self.publish_status)       # 10Hz
-        self.watchdog_timer = self.create_timer(self.cmd_timeout / 2.0, self.cmd_watchdog)  # 超时检测
+        self.status_timer = self.create_timer(0.1, self.publish_status)  # 10Hz
+        self.watchdog_timer = self.create_timer(
+            self.cmd_timeout / 2.0, self.cmd_watchdog
+        )  # 超时检测
 
         # ── 订阅 ──
         self.cmd_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_vel_callback, 10)
@@ -95,13 +97,13 @@ class MotorControllerNode(Node):
         v = msg.linear.x
         w = msg.angular.z
 
-        v_left  = v - w * self.wheel_sep / 2.0
+        v_left = v - w * self.wheel_sep / 2.0
         v_right = v + w * self.wheel_sep / 2.0
 
-        rpm_left  = int(v_left  / (2.0 * math.pi * self.wheel_radius) * 60.0 * self.gear_ratio)
+        rpm_left = int(v_left / (2.0 * math.pi * self.wheel_radius) * 60.0 * self.gear_ratio)
         rpm_right = int(v_right / (2.0 * math.pi * self.wheel_radius) * 60.0 * self.gear_ratio)
 
-        rpm_left  = max(-self.max_rpm, min(self.max_rpm, rpm_left))
+        rpm_left = max(-self.max_rpm, min(self.max_rpm, rpm_left))
         rpm_right = max(-self.max_rpm, min(self.max_rpm, rpm_right))
 
         self.drives.set_wheel_speeds(rpm_left, rpm_right)
@@ -132,8 +134,7 @@ class MotorControllerNode(Node):
             return
         elapsed = time.time() - self.last_cmd_time
         if elapsed > self.cmd_timeout and (self.cmd_left_rpm != 0 or self.cmd_right_rpm != 0):
-            self.get_logger().warn(
-                f'[TIMEOUT] {elapsed:.2f}s 未收到指令 → 自动停车')
+            self.get_logger().warn(f'[TIMEOUT] {elapsed:.2f}s 未收到指令 → 自动停车')
             self.drives.stop_all()
             self.cmd_left_rpm = 0
             self.cmd_right_rpm = 0
@@ -163,7 +164,9 @@ class MotorControllerNode(Node):
 
             # 计算偏差百分比
             dev_left = abs(act_left - self.cmd_left_rpm) / max(abs(self.cmd_left_rpm), 1.0) * 100
-            dev_right = abs(act_right - self.cmd_right_rpm) / max(abs(self.cmd_right_rpm), 1.0) * 100
+            dev_right = (
+                abs(act_right - self.cmd_right_rpm) / max(abs(self.cmd_right_rpm), 1.0) * 100
+            )
             max_dev = max(dev_left, dev_right)
 
             if max_dev > self.rpm_warn_pct and (self.cmd_left_rpm != 0 or self.cmd_right_rpm != 0):
@@ -171,7 +174,8 @@ class MotorControllerNode(Node):
                 self.get_logger().warn(
                     f'[RPM-DEV] cmd=({self.cmd_left_rpm},{self.cmd_right_rpm}) '
                     f'act=({act_left},{act_right}) '
-                    f'dev=({dev_left:.0f}%,{dev_right:.0f}%)')
+                    f'dev=({dev_left:.0f}%,{dev_right:.0f}%)'
+                )
 
             # 状态消息
             elapsed = self.get_clock().now() - self.last_cmd_stamp
@@ -218,6 +222,7 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

@@ -15,15 +15,17 @@
 订阅: /bt/response (发送给 App 的数据)
 """
 
+import json
 import struct
 import threading
-import json
+
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String, Float32, Bool
+from std_msgs.msg import Float32, String
 
 try:
     import bluetooth
+
     HAS_BLUETOOTH = True
 except ImportError:
     HAS_BLUETOOTH = False
@@ -32,14 +34,14 @@ except ImportError:
 # ── 协议常量 ──
 FRAME_HEADER: int = 0xAA
 
-CMD_QUERY_STATUS: int = 0x01   # App→车: 查询状态
-CMD_SET_SCHEDULE: int = 0x02   # App→车: 设置工作时间
-CMD_SET_ROUTE: int    = 0x03   # App→车: 设置路线
-CMD_EMERGENCY: int    = 0x04   # App→车: 紧急停止
-CMD_START_STOP: int   = 0x05   # App→车: 启动/停止工作
+CMD_QUERY_STATUS: int = 0x01  # App→车: 查询状态
+CMD_SET_SCHEDULE: int = 0x02  # App→车: 设置工作时间
+CMD_SET_ROUTE: int = 0x03  # App→车: 设置路线
+CMD_EMERGENCY: int = 0x04  # App→车: 紧急停止
+CMD_START_STOP: int = 0x05  # App→车: 启动/停止工作
 
-RSP_STATUS: int       = 0x11   # 车→App: 状态数据
-RSP_ACK: int          = 0x12   # 车→App: 确认
+RSP_STATUS: int = 0x11  # 车→App: 状态数据
+RSP_ACK: int = 0x12  # 车→App: 确认
 
 
 class BluetoothServer(Node):
@@ -123,7 +125,7 @@ class BluetoothServer(Node):
 
     def _on_mileage(self, msg: Float32) -> None:
         with self._lock:
-            self._total_km = msg.data / 1000.0   # m → km
+            self._total_km = msg.data / 1000.0  # m → km
 
     def _on_motor_status(self, msg: String) -> None:
         # 通过 motor_controller 的 status 消息判断是否在工作中
@@ -138,14 +140,16 @@ class BluetoothServer(Node):
         """蓝牙 SPP 主循环 (运行在独立线程)"""
         try:
             self.server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-            self.server_sock.bind(("", bluetooth.PORT_ANY))
+            self.server_sock.bind(('', bluetooth.PORT_ANY))
             self.server_sock.listen(1)
 
             bluetooth.advertise_service(
-                self.server_sock, "RoboClean",
-                service_id="00001101-0000-1000-8000-00805F9B34FB",
-                service_classes=["00001101-0000-1000-8000-00805F9B34FB"],
-                profiles=[bluetooth.SERIAL_PORT_PROFILE])
+                self.server_sock,
+                'RoboClean',
+                service_id='00001101-0000-1000-8000-00805F9B34FB',
+                service_classes=['00001101-0000-1000-8000-00805F9B34FB'],
+                profiles=[bluetooth.SERIAL_PORT_PROFILE],
+            )
 
             self.get_logger().info('等待蓝牙连接...')
 
@@ -181,7 +185,7 @@ class BluetoothServer(Node):
             return
         length = data[1]
         cmd = data[2]
-        payload = data[3:3 + length - 3] if length > 3 else b''
+        payload = data[3 : 3 + length - 3] if length > 3 else b''
         checksum_byte = data[3 + length - 3] if len(data) > 3 + length - 3 else 0
 
         # 异或校验
@@ -208,7 +212,9 @@ class BluetoothServer(Node):
             self._send_ack(True)
         elif cmd == CMD_START_STOP:
             start = payload[0] if payload else 0
-            self.cmd_pub.publish(String(data=json.dumps({'cmd': 'start_stop', 'start': bool(start)})))
+            self.cmd_pub.publish(
+                String(data=json.dumps({'cmd': 'start_stop', 'start': bool(start)}))
+            )
             self._send_ack(True)
 
     # ── 发送 (线程安全读取) ──
@@ -218,10 +224,10 @@ class BluetoothServer(Node):
         payload = struct.pack(
             '<Bf f B B',
             int(self._get_battery_pct()),
-            self._battery_v,       # 电压从 lock 外直接读 (float atomic on CPython)
+            self._battery_v,  # 电压从 lock 外直接读 (float atomic on CPython)
             self._get_total_km(),
             1 if self._get_working() else 0,
-            self._get_temperature()
+            self._get_temperature(),
         )
         self._send_frame(RSP_STATUS, payload)
 
@@ -255,6 +261,7 @@ def main(args=None):
     rclpy.init(args=args)
     rclpy.spin(BluetoothServer())
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

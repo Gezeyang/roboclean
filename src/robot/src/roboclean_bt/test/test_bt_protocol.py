@@ -7,7 +7,6 @@
 
 import struct
 import sys
-import pytest
 
 sys.path.insert(0, '..')
 
@@ -33,17 +32,12 @@ def build_frame(cmd: int, payload: bytes = b'') -> bytes:
     return bytes([FRAME_HEADER, length, cmd]) + payload + bytes([checksum])
 
 
-def build_status_payload(battery_pct: int, voltage: float,
-                         total_km: float, working: bool,
-                         temperature: int) -> bytes:
+def build_status_payload(
+    battery_pct: int, voltage: float, total_km: float, working: bool, temperature: int
+) -> bytes:
     """构建状态 payload (与 bt_server.py _send_status 逻辑一致)"""
     return struct.pack(
-        '<Bf f B B',
-        battery_pct,
-        voltage,
-        total_km,
-        1 if working else 0,
-        temperature
+        '<Bf f B B', battery_pct, voltage, total_km, 1 if working else 0, temperature
     )
 
 
@@ -53,7 +47,7 @@ def verify_checksum(frame: bytes) -> bool:
         return False
     length = frame[1]
     cmd = frame[2]
-    payload = frame[3:3 + length - 3]
+    payload = frame[3 : 3 + length - 3]
     expected = frame[3 + length - 3]
     calc = FRAME_HEADER ^ length ^ cmd
     for b in payload:
@@ -65,8 +59,8 @@ def verify_checksum(frame: bytes) -> bool:
 # 帧构建
 # ═══════════════════════════════════════════════════
 
-class TestFrameBuilding:
 
+class TestFrameBuilding:
     def test_query_status_frame(self):
         frame = build_frame(CMD_QUERY_STATUS)
         assert len(frame) == 4
@@ -86,12 +80,12 @@ class TestFrameBuilding:
         frame = build_frame(CMD_SET_ROUTE, payload)
         assert frame[1] == 3 + len(payload)
         assert frame[2] == CMD_SET_ROUTE
-        assert frame[3:3 + len(payload)] == payload
+        assert frame[3 : 3 + len(payload)] == payload
         assert verify_checksum(frame)
 
     def test_set_schedule_frame(self):
         # 中文用 UTF-8 编码后再转 bytes
-        payload = '{"slots":[{"day":"周一","start":"08:00"},{"end":"09:00"}]}'.encode('utf-8')
+        payload = '{"slots":[{"day":"周一","start":"08:00"},{"end":"09:00"}]}'.encode()
         frame = build_frame(CMD_SET_SCHEDULE, payload)
         assert verify_checksum(frame)
 
@@ -116,8 +110,8 @@ class TestFrameBuilding:
 # 校验和
 # ═══════════════════════════════════════════════════
 
-class TestChecksum:
 
+class TestChecksum:
     def test_valid_frame_passes(self):
         frame = build_frame(CMD_QUERY_STATUS)
         assert verify_checksum(frame)
@@ -147,13 +141,12 @@ class TestChecksum:
 # 状态 payload 打包/解包
 # ═══════════════════════════════════════════════════
 
-class TestStatusPayload:
 
+class TestStatusPayload:
     def test_build_and_parse_roundtrip(self):
         """打包后解包应一致"""
         payload = build_status_payload(
-            battery_pct=85, voltage=52.0, total_km=15.5,
-            working=True, temperature=32
+            battery_pct=85, voltage=52.0, total_km=15.5, working=True, temperature=32
         )
         assert len(payload) == 1 + 4 + 4 + 1 + 1  # 11 bytes
 
@@ -197,8 +190,8 @@ class TestStatusPayload:
 # 命令常量
 # ═══════════════════════════════════════════════════
 
-class TestCommandConstants:
 
+class TestCommandConstants:
     def test_app_to_robot_commands(self):
         assert CMD_QUERY_STATUS == 0x01
         assert CMD_SET_SCHEDULE == 0x02

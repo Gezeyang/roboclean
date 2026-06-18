@@ -15,12 +15,13 @@
 """
 
 import math
+
 import rclpy
-from rclpy.node import Node
-from rclpy.action import ActionClient
-from nav2_msgs.action import NavigateToPose
 from geometry_msgs.msg import PoseStamped, Quaternion, Twist
-from std_msgs.msg import Float32, Bool, String
+from nav2_msgs.action import NavigateToPose
+from rclpy.action import ActionClient
+from rclpy.node import Node
+from std_msgs.msg import Float32, String
 
 
 class ChargingDockController(Node):
@@ -71,7 +72,8 @@ class ChargingDockController(Node):
 
         self.get_logger().info(
             f'回充控制器已启动 | 充电桩: ({self.dock_x},{self.dock_y}) '
-            f'| 低电阈值: {self.low_v}V | 充满阈值: {self.full_v}V')
+            f'| 低电阈值: {self.low_v}V | 充满阈值: {self.full_v}V'
+        )
 
     def _try_connect_nav(self) -> None:
         """尝试连接 Nav2 action server (非阻塞)"""
@@ -173,6 +175,7 @@ def main(args=None):
     rclpy.init(args=args)
     rclpy.spin(ChargingDockController())
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

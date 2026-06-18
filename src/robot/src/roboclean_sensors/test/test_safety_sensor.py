@@ -5,9 +5,6 @@
 测试内容: 触发逻辑、急停优先级、超声波距离计算、GPIO 模拟
 """
 
-import math
-import pytest
-
 
 # ═══════════════════════════════════════════════════
 # 超声波距离计算 (从硬件信号)
@@ -26,7 +23,6 @@ def pulse_to_distance(pulse_duration_s: float) -> float:
 
 
 class TestUltrasonicDistance:
-
     def test_1cm_distance(self):
         """1cm ≈ 58.3μs 脉冲"""
         # 0.01m = 343 * t / 2 → t = 2*0.01/343 ≈ 58.3μs
@@ -62,6 +58,7 @@ class TestUltrasonicDistance:
 # 安全触发逻辑
 # ═══════════════════════════════════════════════════
 
+
 class SafetyState:
     """模拟 safety_sensor 的状态机 (不含 GPIO/ROS)"""
 
@@ -77,45 +74,44 @@ class SafetyState:
         reasons: list[str] = []
 
         if self.bumper_left:
-            reasons.append("安全触边左触发")
+            reasons.append('安全触边左触发')
         if self.bumper_right:
-            reasons.append("安全触边右触发")
+            reasons.append('安全触边右触发')
         if self.emergency_pressed:
-            reasons.append("急停按钮按下")
+            reasons.append('急停按钮按下')
 
         if reasons:
-            return True, " + ".join(reasons)
-        return False, ""
+            return True, ' + '.join(reasons)
+        return False, ''
 
 
 class TestSafetyLogic:
-
     def test_no_trigger_when_all_clear(self):
         state = SafetyState()
         triggered, reason = state.check_trigger()
         assert not triggered
-        assert reason == ""
+        assert reason == ''
 
     def test_left_bumper_triggers(self):
         state = SafetyState()
         state.bumper_left = True
         triggered, reason = state.check_trigger()
         assert triggered
-        assert "左触发" in reason
+        assert '左触发' in reason
 
     def test_right_bumper_triggers(self):
         state = SafetyState()
         state.bumper_right = True
         triggered, reason = state.check_trigger()
         assert triggered
-        assert "右触发" in reason
+        assert '右触发' in reason
 
     def test_emergency_button_triggers(self):
         state = SafetyState()
         state.emergency_pressed = True
         triggered, reason = state.check_trigger()
         assert triggered
-        assert "急停" in reason
+        assert '急停' in reason
 
     def test_both_bumpers_triggers(self):
         state = SafetyState()
@@ -123,8 +119,8 @@ class TestSafetyLogic:
         state.bumper_right = True
         triggered, reason = state.check_trigger()
         assert triggered
-        assert "左触发" in reason
-        assert "右触发" in reason
+        assert '左触发' in reason
+        assert '右触发' in reason
 
     def test_all_triggers_combined(self):
         state = SafetyState()
@@ -133,9 +129,9 @@ class TestSafetyLogic:
         state.emergency_pressed = True
         triggered, reason = state.check_trigger()
         assert triggered
-        assert "左触发" in reason
-        assert "右触发" in reason
-        assert "急停" in reason
+        assert '左触发' in reason
+        assert '右触发' in reason
+        assert '急停' in reason
 
     def test_trigger_then_clear(self):
         """触发后放开应恢复正常"""
@@ -151,12 +147,12 @@ class TestSafetyLogic:
 # 超声波距离校验
 # ═══════════════════════════════════════════════════
 
-class TestUltrasonicValidation:
 
+class TestUltrasonicValidation:
     def test_valid_range_accepted(self):
         """2cm-4m 内的值应被接受"""
-        assert 0.02 < 0.5 < 4.0   # 50cm 有效
-        assert 0.02 < 2.0 < 4.0   # 2m 有效
+        assert 0.02 < 0.5 < 4.0  # 50cm 有效
+        assert 0.02 < 2.0 < 4.0  # 2m 有效
 
     def test_too_close_rejected(self):
         """小于 2cm 的值视为无效"""
@@ -168,14 +164,15 @@ class TestUltrasonicValidation:
 
     def test_exact_boundaries(self):
         """边界值验证"""
-        assert not (0.02 < 0.02 < 4.0)   # 等于下限 → 无效
-        assert not (0.02 < 4.0 < 4.0)     # 等于上限 → 无效
-        assert 0.02 < 0.021 < 4.0         # 略大于下限 → 有效
+        assert not (0.02 < 0.02 < 4.0)  # 等于下限 → 无效
+        assert not (0.02 < 4.0 < 4.0)  # 等于上限 → 无效
+        assert 0.02 < 0.021 < 4.0  # 略大于下限 → 有效
 
 
 # ═══════════════════════════════════════════════════
 # GPIO 模拟 (低电平触发)
 # ═══════════════════════════════════════════════════
+
 
 class TestGpioTrigger:
     """GPIO 逻辑: 上拉输入, LOW(0) = 触发"""

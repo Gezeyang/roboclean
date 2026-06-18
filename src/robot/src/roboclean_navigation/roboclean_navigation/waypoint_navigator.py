@@ -12,12 +12,13 @@
 import json
 import math
 from typing import Any
+
 import rclpy
-from rclpy.node import Node
-from rclpy.action import ActionClient
+from geometry_msgs.msg import PoseStamped, Quaternion
 from nav2_msgs.action import NavigateToPose
-from geometry_msgs.msg import PoseStamped, Point, Quaternion
-from std_msgs.msg import String, Bool
+from rclpy.action import ActionClient
+from rclpy.node import Node
+from std_msgs.msg import Bool, String
 
 
 class WaypointNavigator(Node):
@@ -75,8 +76,8 @@ class WaypointNavigator(Node):
 
         wp = self.waypoints[self.current_index]
         self.get_logger().info(
-            f'导航到 [{self.current_index + 1}/{len(self.waypoints)}]: '
-            f'{wp.get("name", "?")}')
+            f'导航到 [{self.current_index + 1}/{len(self.waypoints)}]: ' f'{wp.get("name", "?")}'
+        )
 
         goal = NavigateToPose.Goal()
         goal.pose = PoseStamped()
@@ -89,7 +90,8 @@ class WaypointNavigator(Node):
 
         self.nav_client.wait_for_server()
         send_goal_future = self.nav_client.send_goal_async(
-            goal, feedback_callback=self.feedback_callback)
+            goal, feedback_callback=self.feedback_callback
+        )
         send_goal_future.add_done_callback(self.goal_response_callback)
 
         # 启动清洁刷 + 标记导航活动
@@ -108,7 +110,7 @@ class WaypointNavigator(Node):
         result_future.add_done_callback(self.result_callback)
 
     def result_callback(self, future) -> None:
-        result = future.result().result
+        _result = future.result().result  # noqa: F841 (保留用于诊断)
         self.get_logger().info(f'到达途经点 [{self.current_index + 1}]')
         self.status_pub.publish(String(data=f'arrived:{self.current_index}'))
 
@@ -129,6 +131,7 @@ def main(args=None):
     rclpy.init(args=args)
     rclpy.spin(WaypointNavigator())
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
