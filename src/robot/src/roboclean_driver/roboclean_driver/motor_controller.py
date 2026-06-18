@@ -78,6 +78,12 @@ class MotorControllerNode(Node):
         # ── 订阅 ──
         self.cmd_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_vel_callback, 10)
         self.safety_sub = self.create_subscription(Bool, '/safety/stop', self.safety_callback, 10)
+        # 手动操控 + 任务指令 (来自 bt_server)
+        self.bt_cmd_sub = self.create_subscription(
+            String, '/bt/command', self._bt_command_callback, 10
+        )
+        self._manual_linear: float = 0.0
+        self._manual_angular: float = 0.0
 
         # ── 发布 ──
         self.status_pub = self.create_publisher(String, '/motor/status', 10)
@@ -123,6 +129,73 @@ class MotorControllerNode(Node):
             self.drives.emergency_stop()
             self.cmd_left_rpm = 0
             self.cmd_right_rpm = 0
+
+    def _bt_command_callback(self, msg: String) -> None:
+        """处理手动操控 + 急停指令 (来自 App → bt_server 转发)"""
+        import json
+
+        try:
+            data = json.loads(msg.data)
+        except json.JSONDecodeError:
+            return
+
+        cmd = data.get('cmd', '')
+        if cmd == 'emergency_stop':
+            self.get_logger().error('App 急停 → 紧急停止!')
+            if self.drives:
+                self.drives.emergency_stop()
+            self._manual_linear = 0.0
+            self._manual_angular = 0.0
+            self.cmd_left_rpm = 0
+            self.cmd_right_rpm = 0
+        elif cmd == 'manual_control':
+            ctrl = data.get('data', {})
+            action = ctrl.get('action', '')
+            if action == 'stop':
+                self._manual_linear = 0.0
+                self._manual_angular = 0.0
+            elif action == 'move':
+                direction = ctrl.get('direction', 'forward')
+                speed = float(ctrl.get('speed', 0.15))
+                if direction == 'forward':
+                    self._manual_linear = speed
+                    self._manual_angular = 0.0
+                elif direction == 'backward':
+                    self._manual_linear = -speed
+                    self._manual_angular = 0.0
+                elif direction == 'left':
+                    self._manual_linear = 0.0
+                    self._manual_angular = speed * 1.5
+                elif direction == 'right':
+                    self._manual_linear = 0.0
+                    self._manual_angular = -speed * 1.5
+                self._apply_manual_velocity()
+            elif action == 'brush':
+                on = ctrl.get('on', False)
+                if self.drives:
+                    if on:
+                        self.drives.brush.set_speed(800)
+                    else:
+                        self.drives.brush.stop()
+                self.get_logger().info(f'刷子: {"开" if on else "关"}')
+
+    def _apply_manual_velocity(self) -> None:
+        """将手动操控的速度直接写入驱动器"""
+        if self.drives is None:
+            return
+        v = self._manual_linear
+        w = self._manual_angular
+        v_left = v - w * self.wheel_sep / 2.0
+        v_right = v + w * self.wheel_sep / 2.0
+        rpm_left = int(v_left / (2.0 * math.pi * self.wheel_radius) * 60.0 * self.gear_ratio)
+        rpm_right = int(v_right / (2.0 * math.pi * self.wheel_radius) * 60.0 * self.gear_ratio)
+        rpm_left = max(-self.max_rpm, min(self.max_rpm, rpm_left))
+        rpm_right = max(-self.max_rpm, min(self.max_rpm, rpm_right))
+        self.drives.set_wheel_speeds(rpm_left, rpm_right)
+        self.cmd_left_rpm = rpm_left
+        self.cmd_right_rpm = rpm_right
+        self.last_cmd_time = time.time()
+        self.last_cmd_stamp = self.get_clock().now()
 
     # ═══════════════════════════════════════════════════════════
     # 指令超时看门狗

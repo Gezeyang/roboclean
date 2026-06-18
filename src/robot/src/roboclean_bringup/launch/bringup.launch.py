@@ -76,6 +76,14 @@ def generate_launch_description():
         ],
     )
 
+    # ── 任务调度器 (离线自主运行) ──
+    task_scheduler = Node(
+        package='roboclean_navigation',
+        executable='task_scheduler',
+        name='task_scheduler',
+        output='screen',
+    )
+
     # ── 围栏跟随 (推料核心) ──
     fence_follower = Node(
         package='roboclean_navigation',
@@ -144,6 +152,7 @@ def generate_launch_description():
             motor_controller,
             encoder_odom,
             safety_sensor,
+            task_scheduler,
             fence_follower,
             waypoint_navigator,
             charging_dock,

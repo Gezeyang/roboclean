@@ -64,8 +64,9 @@ class ChargingDockController(Node):
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.status_pub = self.create_publisher(String, '/charging/status', 10)
 
-        # 订阅电池电压
+        # 订阅电池电压 + App 指令
         self.create_subscription(Float32, '/battery/voltage', self.battery_callback, 10)
+        self.create_subscription(String, '/bt/command', self._on_bt_command, 10)
 
         # 定时器 (10Hz)
         self.timer = self.create_timer(0.1, self.state_machine)
@@ -88,6 +89,24 @@ class ChargingDockController(Node):
 
     def battery_callback(self, msg: Float32) -> None:
         self.battery_voltage = msg.data
+
+    def _on_bt_command(self, msg: String) -> None:
+        """App 远程设置充电桩位置"""
+        import json
+
+        try:
+            data = json.loads(msg.data)
+        except json.JSONDecodeError:
+            return
+        if data.get('cmd') == 'set_dock':
+            pos = data.get('data', {})
+            self.dock_x = float(pos.get('x', self.dock_x))
+            self.dock_y = float(pos.get('y', self.dock_y))
+            self.dock_yaw = float(pos.get('yaw', self.dock_yaw))
+            self.get_logger().info(
+                f'充电桩位置更新: ({self.dock_x:.2f}, {self.dock_y:.2f}), '
+                f'yaw={math.degrees(self.dock_yaw):.1f}°'
+            )
 
     def state_machine(self) -> None:
         v = self.battery_voltage

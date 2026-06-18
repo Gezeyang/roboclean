@@ -26,6 +26,7 @@ setup(
             'fence_follower = roboclean_navigation.fence_follower:main',
             'waypoint_navigator = roboclean_navigation.waypoint_navigator:main',
             'charging_dock = roboclean_navigation.charging_dock:main',
+            'task_scheduler = roboclean_navigation.task_scheduler:main',
         ],
     },
 )

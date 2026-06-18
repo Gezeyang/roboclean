@@ -183,6 +183,10 @@ class FenceFollower(Node):
             Float32, '/ultrasonic/fence', self.ultrasonic_callback, 10
         )
         self.nav_sub = self.create_subscription(Bool, '/nav/active', self._nav_active_callback, 10)
+        # 任务调度
+        self._task_enabled: bool = False
+        self.create_subscription(Bool, '/task/start', self._task_start_callback, 10)
+        self.create_subscription(Bool, '/task/stop', self._task_stop_callback, 10)
 
         # ── 发布 ──
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
@@ -271,6 +275,19 @@ class FenceFollower(Node):
         """waypoint_navigator 活动时暂停围栏跟随"""
         self._nav_active = msg.data
 
+    def _task_start_callback(self, msg: Bool) -> None:
+        """离线任务调度: 到时间 → 启动推料"""
+        if msg.data:
+            self._task_enabled = True
+            self.get_logger().info('任务调度: 启动推料')
+
+    def _task_stop_callback(self, msg: Bool) -> None:
+        """离线任务调度: 时间到 → 停止推料"""
+        if msg.data:
+            self._task_enabled = False
+            self._stop(reset=True)
+            self.get_logger().info('任务调度: 停止推料')
+
     def ultrasonic_callback(self, msg: Float32) -> None:
         """接收侧方超声波距离 (m)"""
         d = msg.data
@@ -287,8 +304,13 @@ class FenceFollower(Node):
     def control_loop(self) -> None:
         """PID 控制主循环 (20Hz)"""
 
-        # waypoint_navigator 活动时暂停围栏跟随，让其独占 /cmd_vel
+        # waypoint_navigator 活动时暂停
         if self._nav_active:
+            return
+
+        # 离线模式: 仅在有任务时推料
+        if not self._task_enabled:
+            # 不推料, 但可以继续停车 (不主动发 cmd_vel)
             return
 
         if self.fence_detected:

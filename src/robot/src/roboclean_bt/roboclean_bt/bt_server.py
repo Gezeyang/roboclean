@@ -39,6 +39,7 @@ CMD_SET_SCHEDULE: int = 0x02  # App→车: 设置工作时间
 CMD_SET_ROUTE: int = 0x03  # App→车: 设置路线
 CMD_EMERGENCY: int = 0x04  # App→车: 紧急停止
 CMD_START_STOP: int = 0x05  # App→车: 启动/停止工作
+CMD_MANUAL_CTRL: int = 0x06  # App→车: 手动操控
 
 RSP_STATUS: int = 0x11  # 车→App: 状态数据
 RSP_ACK: int = 0x12  # 车→App: 确认
@@ -215,6 +216,16 @@ class BluetoothServer(Node):
             self.cmd_pub.publish(
                 String(data=json.dumps({'cmd': 'start_stop', 'start': bool(start)}))
             )
+            self._send_ack(True)
+        elif cmd == CMD_MANUAL_CTRL:
+            # 手动操控指令 → 发布给 motor_controller 处理
+            try:
+                ctrl = json.loads(payload.decode())
+                self.cmd_pub.publish(
+                    String(data=json.dumps({'cmd': 'manual_control', 'data': ctrl}))
+                )
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                pass
             self._send_ack(True)
 
     # ── 发送 (线程安全读取) ──
