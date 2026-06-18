@@ -20,6 +20,9 @@ object BleProtocol {
     const val CMD_EMERGENCY: Byte    = 0x04
     const val CMD_START_STOP: Byte   = 0x05
 
+    // App → 小车 (手动操控)
+    const val CMD_MANUAL_CTRL: Byte = 0x06  // 手动操控指令
+
     // 小车 → App
     const val RSP_STATUS: Byte = 0x11
     const val RSP_ACK: Byte    = 0x12

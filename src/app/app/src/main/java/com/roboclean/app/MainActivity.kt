@@ -21,6 +21,7 @@ import com.roboclean.app.data.RouteRepository
 import com.roboclean.app.data.ScheduleRepository
 import com.roboclean.app.ui.navigation.Screen
 import com.roboclean.app.ui.screens.*
+import com.roboclean.app.ui.screens.*
 import com.roboclean.app.ui.theme.*
 import com.roboclean.app.ui.viewmodel.*
 
@@ -58,6 +59,9 @@ fun MainApp() {
     val scheduleRepo = remember { ScheduleRepository(context) }
     val scheduleVM: ScheduleViewModel = viewModel(
         factory = ViewModelFactory { ScheduleViewModel(scheduleRepo, btService) }
+    )
+    val controlVM: ControlViewModel = viewModel(
+        factory = ViewModelFactory { ControlViewModel(btService) }
     )
 
     DisposableEffect(Unit) {
@@ -123,6 +127,9 @@ fun MainApp() {
             }
             composable(Screen.Schedule.route) {
                 ScheduleScreen(viewModel = scheduleVM)
+            }
+            composable(Screen.Control.route) {
+                ControlScreen(viewModel = controlVM)
             }
             composable(Screen.Bluetooth.route) {
                 BluetoothScreen(viewModel = bluetoothVM)

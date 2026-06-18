@@ -180,6 +180,12 @@ class BluetoothService(private val context: Context) {
         send(BleProtocol.buildFrame(BleProtocol.CMD_SET_ROUTE, payload))
     }
 
+    /** 手动操控指令 (JSON: {"action":"move","direction":"forward","speed":0.25}) */
+    fun sendManualControl(actionJson: String) {
+        val payload = actionJson.toByteArray(Charsets.UTF_8)
+        send(BleProtocol.buildFrame(BleProtocol.CMD_MANUAL_CTRL, payload))
+    }
+
     // ── 内部 ──
 
     private fun send(frame: ByteArray) {
