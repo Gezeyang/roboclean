@@ -162,6 +162,50 @@ fun ControlScreen(viewModel: ControlViewModel) {
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ── 路径录制 / 回放 ──
+        val isRecording by viewModel.isRecording.collectAsState()
+        val isPlaying by viewModel.isPlaying.collectAsState()
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = { if (isRecording) viewModel.stopRecording() else viewModel.startRecording() },
+                modifier = Modifier.weight(1f).height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isRecording) Error else Blue500
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    if (isRecording) Icons.Filled.Stop else Icons.Filled.Circle,
+                    contentDescription = null, modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(if (isRecording) "停止录制" else "开始录制", fontSize = 14.sp)
+            }
+
+            Button(
+                onClick = { if (isPlaying) viewModel.stopPlayback() else viewModel.startPlayback() },
+                modifier = Modifier.weight(1f).height(48.dp),
+                enabled = !isRecording,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isPlaying) Warning else Blue700
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    if (isPlaying) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+                    contentDescription = null, modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(if (isPlaying) "停止回放" else "开始回放", fontSize = 14.sp)
+            }
+        }
+
         Spacer(modifier = Modifier.weight(1f))
 
         // ── 紧急停止 ──

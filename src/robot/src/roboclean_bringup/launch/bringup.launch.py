@@ -84,6 +84,20 @@ def generate_launch_description():
         output='screen',
     )
 
+    # ── 路径录制 + 回放 (示教模式) ──
+    path_recorder = Node(
+        package='roboclean_navigation',
+        executable='path_recorder',
+        name='path_recorder',
+        output='screen',
+    )
+    path_player = Node(
+        package='roboclean_navigation',
+        executable='path_player',
+        name='path_player',
+        output='screen',
+    )
+
     # ── 围栏跟随 (推料核心) ──
     fence_follower = Node(
         package='roboclean_navigation',
@@ -153,6 +167,8 @@ def generate_launch_description():
             encoder_odom,
             safety_sensor,
             task_scheduler,
+            path_recorder,
+            path_player,
             fence_follower,
             waypoint_navigator,
             charging_dock,

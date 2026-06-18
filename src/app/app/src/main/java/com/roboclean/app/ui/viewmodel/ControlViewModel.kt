@@ -74,4 +74,32 @@ class ControlViewModel(
     fun emergencyStop() {
         btService.emergencyStop()
     }
+
+    // ── 路径录制 / 回放 ──
+
+    private val _isRecording = MutableStateFlow(false)
+    val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
+
+    private val _isPlaying = MutableStateFlow(false)
+    val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
+
+    fun startRecording() {
+        _isRecording.value = true
+        btService.sendManualControl("""{"action":"record_start","name":"示教路径"}""")
+    }
+
+    fun stopRecording() {
+        _isRecording.value = false
+        btService.sendManualControl("""{"action":"record_stop"}""")
+    }
+
+    fun startPlayback() {
+        _isPlaying.value = true
+        btService.sendManualControl("""{"action":"playback_start","file":""}""")
+    }
+
+    fun stopPlayback() {
+        _isPlaying.value = false
+        btService.sendManualControl("""{"action":"playback_stop"}""")
+    }
 }
