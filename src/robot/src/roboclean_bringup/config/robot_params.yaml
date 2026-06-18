@@ -73,12 +73,12 @@ charging_dock:
   approach_distance: 1.0       # 接近距离 (m)
   dock_speed: 0.1              # 泊入速度 (m/s)
 
-# ── 围栏跟随 (推料机器人核心) ──
+# ── 围栏跟随 v2 — 通道中线追踪 ──
 fence_following:
-  fence_side: "left"           # 围栏在机器人哪侧
-  target_distance: 0.50        # 离围栏目标距离 (m)
-  forward_speed: 0.25          # 前进速度 (m/s)
-  max_angular_speed: 0.6       # 最大转向角速度
+  channel_width: 3.0            # 通道宽度 (两侧围栏间距, m)
+  target_offset: 0.0            # 相对中线的偏移 (>0=偏右, <0=偏左)
+  forward_speed: 0.25           # 前进速度 (m/s)
+  max_angular_speed: 0.6        # 最大转向角速度
 
   # PID
   pid_p_lateral: 1.2
@@ -86,18 +86,19 @@ fence_following:
   pid_d_lateral: 0.3
   pid_p_angle: 0.8
 
-  # 围栏检测
-  ransac_min_samples: 10
-  ransac_residual_threshold: 0.05
-  fence_angle_min_deg: -45
-  fence_angle_max_deg: 45
-  min_fence_points: 8
+  # 围栏检测 (两侧)
+  left_angle_min_deg: -80       # 左侧围栏搜索角度范围
+  left_angle_max_deg: -10
+  right_angle_min_deg: 10       # 右侧围栏搜索角度范围
+  right_angle_max_deg: 80
+  min_fence_points: 5           # 单侧最少有效点数
+  outlier_dist_m: 0.15          # 离群点判定距离 (m)
 
-  # 惯性保持 (围栏镂空/短暂丢失时)
-  inertia_hold_frames: 50        # 保持帧数 (~2.5s @20Hz)
-  inertia_decel_factor: 0.9      # 每帧减速系数 (0.9^50≈0.005)
+  # 惯性保持
+  inertia_hold_frames: 50
+  inertia_decel_factor: 0.9
 
-  # 超声波辅助 (围栏侧)
+  # 超声波辅助
   use_ultrasonic: true
   ultrasonic_tolerance: 0.20
 
