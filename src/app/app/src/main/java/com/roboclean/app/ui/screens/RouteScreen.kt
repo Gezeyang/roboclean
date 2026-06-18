@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.roboclean.app.R
+import com.roboclean.app.ui.components.OsmMap
+import com.roboclean.app.ui.components.WaypointGeo
 import com.roboclean.app.ui.theme.*
 import com.roboclean.app.ui.viewmodel.RouteViewModel
 import androidx.compose.ui.res.stringResource
@@ -71,34 +73,27 @@ fun RouteScreen(viewModel: RouteViewModel) {
             }
         }
 
-        // 地图占位区域
-        Box(
+        // OpenStreetMap 地图 (osmdroid)
+        OsmMap(
+            waypoints = waypoints.map { wp ->
+                WaypointGeo(
+                    id = wp.id,
+                    name = wp.name,
+                    lat = wp.lat,
+                    lon = wp.lon
+                )
+            },
+            onMapClick = { geo ->
+                viewModel.addWaypoint(
+                    name = geo.name,
+                    lat = geo.lat,
+                    lon = geo.lon
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
-                .background(Blue50),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Filled.Map,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = Blue400
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.map_placeholder_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Blue700
-                )
-                Text(
-                    text = stringResource(R.string.map_not_integrated),
-                    fontSize = 12.sp,
-                    color = TextHint
-                )
-            }
-        }
+                .height(260.dp)
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 

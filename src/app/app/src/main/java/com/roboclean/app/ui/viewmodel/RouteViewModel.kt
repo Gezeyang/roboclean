@@ -37,10 +37,12 @@ class RouteViewModel(
 
     // ── 操作 ──
 
-    fun addWaypoint(name: String, description: String = "") {
+    fun addWaypoint(name: String, description: String = "", lat: Double = 0.0, lon: Double = 0.0) {
         val current = waypoints.value
         val newId = (current.maxOfOrNull { it.id } ?: 0) + 1
-        val updated = current + PersistentWaypoint(id = newId, name = name, description = description)
+        val updated = current + PersistentWaypoint(
+            id = newId, name = name, description = description, lat = lat, lon = lon
+        )
         save(updated)
     }
 

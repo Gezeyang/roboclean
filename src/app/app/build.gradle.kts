@@ -83,6 +83,9 @@ dependencies {
     // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
 
+    // osmdroid (OpenStreetMap, 免费无需 API Key)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
