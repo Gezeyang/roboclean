@@ -1,0 +1,18 @@
+# Auto-detect text files, convert CRLF→LF on commit, LF→CRLF on checkout (Windows)
+* text=auto
+
+# Shell scripts must be LF
+*.sh text eol=lf
+
+# Windows batch files must be CRLF
+*.bat text eol=crlf
+
+# Binary files — don't modify
+*.jar binary
+*.png binary
+*.jpg binary
+*.docx binary
+*.pdf binary
+
+# Gradle wrapper JAR is binary
+gradle-wrapper.jar binary

@@ -1,0 +1,55 @@
+# ⚠️ LiDAR 安装位置需在 launch 中配置 tf (laser_frame → base_link)
+#    型号: 镭神 N10P, 25m, ±2cm, 0.28° 角分辨率
+#
+# slam_toolbox 配置 — 镭神 N10P
+# 适用于 120kg 工业级清洁小车，室内为主 + 室外硬化路面
+
+slam_toolbox:
+  ros__parameters:
+
+    # ── 模式 ──
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_loss_function: HuberLoss
+
+    # ── 地图参数 ──
+    map_frame: map
+    odom_frame: odom
+    base_frame: base_link
+    scan_topic: /scan
+
+    map_resolution: 0.03           # 3cm 分辨率 (N10P ±2cm 精度可支撑)
+    map_size: 2048                 # 地图最大 102m
+    map_start_x: 0.0
+    map_start_y: 0.0
+    map_update_interval: 1.0       # 1秒更新 (N10P 10Hz 足够)
+
+    # ── 回环检测 ──
+    loop_search_maximum_distance: 15.0
+    loop_match_minimum_chain_size: 10
+    loop_match_minimum_response_coarse: 0.35
+    loop_match_minimum_response_fine: 0.50
+
+    # ── 扫描匹配 ──
+    minimum_time_interval: 0.3
+    minimum_travel_distance: 0.1   # 移动 10cm 再处理 (精细匹配)
+    minimum_travel_heading: 0.05   # 转 0.05rad 再处理
+    do_loop_closing: true
+
+    # ── 相关性扫描匹配 ──
+    correlation_search_space_dimension: 0.3
+    correlation_search_space_resolution: 0.005  # 0.5cm (N10P 角分辨率更高)
+    correlation_search_space_smear_deviation: 0.05
+
+    # ── 雷达适配 (镭神 N10P) ──
+    max_laser_range: 25.0          # N10P 最大测距 25m
+    minimum_laser_range: 0.05      # N10P 最小有效距离 5cm
+    use_scan_matching: true
+    use_scan_barycenter: true
+    scan_buffer_size: 20           # 更多帧参与匹配
+
+    # ── 保存/加载 ──
+    map_file_name: /home/pi/roboclean_maps/map
+    map_save_interval: 60.0
+    mode: mapping

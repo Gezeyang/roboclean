@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 机器人身体 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,40 L74,40 C78.4,40 82,43.6 82,48 L82,72 C82,76.4 78.4,80 74,80 L34,80 C29.6,80 26,76.4 26,72 L26,48 C26,43.6 29.6,40 34,40 Z" />
+
+    <!-- 机器人眼睛 - 左 (圆用path绘制) -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M43,51 A5,5 0 1,0 43,61 A5,5 0 1,0 43,51 Z" />
+
+    <!-- 机器人眼睛 - 右 -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M65,51 A5,5 0 1,0 65,61 A5,5 0 1,0 65,51 Z" />
+
+    <!-- 天线杆 -->
+    <path
+        android:strokeWidth="3"
+        android:strokeColor="#FFFFFF"
+        android:pathData="M54,28 L54,40" />
+
+    <!-- 天线顶端圆 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,22 A4,4 0 1,0 54,30 A4,4 0 1,0 54,22 Z" />
+
+    <!-- 轮子 - 左 -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M26,72 L26,82 L36,82 L36,72 Z" />
+
+    <!-- 轮子 - 右 -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M72,72 L72,82 L82,82 L82,72 Z" />
+</vector>

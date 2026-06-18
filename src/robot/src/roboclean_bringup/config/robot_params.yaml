@@ -1,0 +1,105 @@
+# ⚠️ 物理依赖清单 — 以下值装车后必须实测修改！详见 devlog/2026-06-17.md 末尾
+#
+# RoboClean 机器人参数
+# 推料机器人 (对标斯维垦 Nimbo X), 120kg+, 500W×2, 48V
+
+robot:
+  name: "roboclean"
+  weight_kg: 120.0
+  voltage: 48.0
+
+# ── 底盘参数 ──
+chassis:
+  wheel_radius: 0.19            # 300-8 轮胎半径 (m)
+  wheel_separation: 0.65        # 左右轮距 (m)
+  gear_ratio: 56.0              # 减速比
+  max_rpm: 1500                 # 最大安全转速
+
+  # 标定（装车后实测修正）
+  wheel_radius_calib_left: 1.0
+  wheel_radius_calib_right: 1.0
+
+# ── 精度保护 ──
+precision:
+  # 打滑检测
+  max_accel_mss: 2.0            # 最大线加速度 m/s²
+  max_angular_accel_radss: 4.0  # 最大角加速度 rad/s²
+  max_slip_ratio: 0.30          # 左右轮速差异阈值
+  max_instant_jump_m: 0.05      # 单帧最大位移 (m)
+
+  # 指令监控
+  cmd_timeout_s: 0.5            # 无新指令自动停车
+  rpm_deviation_warn_pct: 15.0  # RPM 偏差告警阈值 %
+
+# ── 电机 ──
+motors:
+  left:
+    node_id: 1
+    max_power_w: 500
+    rated_voltage: 48
+  right:
+    node_id: 2
+    max_power_w: 500
+    rated_voltage: 48
+  brush:
+    node_id: 3
+    max_power_w: 200
+    rated_voltage: 48
+
+# ── CAN 总线 ──
+can:
+  channel: "can0"
+  bitrate: 500000           # 500 kbps
+  interface: "socketcan"
+
+# ── 安全 ──
+safety:
+  bumper_timeout_ms: 50
+  emergency_stop_timeout_ms: 10
+  min_obstacle_distance: 0.3
+
+# ── 电池 ──
+battery:
+  rated_voltage: 48.0
+  capacity_ah: 60.0
+  low_battery_threshold: 0.20   # 20% 电量触发回充
+  critical_threshold: 0.10      # 10% 紧急停止
+  full_voltage: 54.6            # 充满电压
+  empty_voltage: 42.0           # 放空电压
+
+# ── 充电桩 ──
+charging_dock:
+  marker_reflectivity: "high"
+  approach_distance: 1.0       # 接近距离 (m)
+  dock_speed: 0.1              # 泊入速度 (m/s)
+
+# ── 围栏跟随 (推料机器人核心) ──
+fence_following:
+  fence_side: "left"           # 围栏在机器人哪侧
+  target_distance: 0.50        # 离围栏目标距离 (m)
+  forward_speed: 0.25          # 前进速度 (m/s)
+  max_angular_speed: 0.6       # 最大转向角速度
+
+  # PID
+  pid_p_lateral: 1.2
+  pid_i_lateral: 0.02
+  pid_d_lateral: 0.3
+  pid_p_angle: 0.8
+
+  # 围栏检测
+  ransac_min_samples: 10
+  ransac_residual_threshold: 0.05
+  fence_angle_min_deg: -45
+  fence_angle_max_deg: 45
+  min_fence_points: 8
+
+  # 惯性保持 (围栏镂空/短暂丢失时)
+  inertia_hold_frames: 50        # 保持帧数 (~2.5s @20Hz)
+  inertia_decel_factor: 0.9      # 每帧减速系数 (0.9^50≈0.005)
+
+  # 超声波辅助 (围栏侧)
+  use_ultrasonic: true
+  ultrasonic_tolerance: 0.20
+
+  # 推料滚筒
+  drum_rpm: 800

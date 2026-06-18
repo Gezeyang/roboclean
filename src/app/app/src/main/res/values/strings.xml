@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">智能清洁</string>
+
+    <!-- 底部导航 -->
+    <string name="nav_dashboard">仪表盘</string>
+    <string name="nav_route">路线</string>
+    <string name="nav_schedule">时间</string>
+    <string name="nav_bluetooth">蓝牙</string>
+
+    <!-- 仪表盘 -->
+    <string name="dashboard_title">智能清洁</string>
+    <string name="device_online">设备在线</string>
+    <string name="device_offline">设备离线</string>
+    <string name="battery">电量</string>
+    <string name="estimated_work_time">预计可工作 %s</string>
+    <string name="total_mileage">累计行驶</string>
+    <string name="connection_status">连接状态</string>
+    <string name="work_status">工作状态</string>
+    <string name="connected">已连接</string>
+    <string name="disconnected">已断开</string>
+    <string name="working">工作中</string>
+    <string name="idle">待机</string>
+    <string name="return_to_charge">🔋 返回充电</string>
+    <string name="emergency_stop">🛑 紧急停止</string>
+
+    <!-- 路线设置 -->
+    <string name="route_title">路线设置</string>
+    <string name="map_placeholder_hint">🗺️ 点击地图添加途经点</string>
+    <string name="map_not_integrated">（地图组件待集成）</string>
+    <string name="waypoint_list_title">途经点列表</string>
+    <string name="waypoint_empty_hint">点击下方按钮添加</string>
+    <string name="add_waypoint">添加途经点</string>
+    <string name="save_route">保存路线</string>
+    <string name="send_to_car">发送到小车</string>
+    <string name="waypoint_name_label">途经点名称</string>
+    <string name="drag_to_reorder">拖拽排序</string>
+    <string name="delete">删除</string>
+
+    <!-- 工作时间 -->
+    <string name="schedule_title">工作时间</string>
+    <string name="filter_all">全部</string>
+    <string name="add_time_slot">添加时间段</string>
+    <string name="save_schedule">保存</string>
+    <string name="schedule_empty_hint">尚未设置工作时间</string>
+    <string name="add_schedule_title">添加工作时间</string>
+    <string name="select_day">选择星期</string>
+    <string name="start_time">开始时间</string>
+    <string name="end_time">结束时间</string>
+    <string name="time_validation_error">请输入有效时间 (00:00-23:59)，结束时间需晚于开始时间</string>
+
+    <!-- 星期 -->
+    <string name="monday">周一</string>
+    <string name="tuesday">周二</string>
+    <string name="wednesday">周三</string>
+    <string name="thursday">周四</string>
+    <string name="friday">周五</string>
+    <string name="saturday">周六</string>
+    <string name="sunday">周日</string>
+
+    <!-- 蓝牙 -->
+    <string name="bluetooth_title">蓝牙连接</string>
+    <string name="connected_devices">已连接设备</string>
+    <string name="no_device_connected">未连接任何设备</string>
+    <string name="available_devices">可用设备</string>
+    <string name="scan_refresh">刷新扫描</string>
+    <string name="unknown_device">未知设备</string>
+    <string name="no_device_found">未发现设备，请点击刷新扫描</string>
+    <string name="all_devices_connected">所有设备已连接</string>
+    <string name="bt_disconnect">断开</string>
+    <string name="bt_connect">连接</string>
+    <string name="bt_tip_title">提示</string>
+    <string name="bt_tip_content">请确保小车已开机且蓝牙已开启。\n有效通信距离约 10 米。</string>
+
+    <!-- 通用 -->
+    <string name="confirm">确定</string>
+    <string name="cancel">取消</string>
+</resources>
