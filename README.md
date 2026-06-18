@@ -35,7 +35,8 @@ robo/
 | 具体要做什么功能？ | [`docs/requirements.md`](docs/requirements.md) |
 | 用什么技术栈？ | [`docs/tech-spec.md`](docs/tech-spec.md) |
 | UI 长什么样？ | [`docs/design-spec.md`](docs/design-spec.md) |
-| 需要买什么硬件？ | [`docs/hardware-bom.md`](docs/hardware-bom.md) *(待生成)* |
+| 需要买什么硬件？ | [`docs/hardware-bom.md`](docs/hardware-bom.md) |
+| 怎么部署到树莓派？ | [`docs/deployment-guide.md`](docs/deployment-guide.md) |
 | 今天做了什么？ | [`devlog/`](devlog/) |
 
 ---
