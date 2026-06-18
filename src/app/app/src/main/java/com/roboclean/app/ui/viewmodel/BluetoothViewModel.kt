@@ -8,43 +8,41 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
-/**
- * 蓝牙管理 ViewModel
- *
- * 职责: 设备扫描/连接/断开、连接状态展示
- */
 class BluetoothViewModel(
     private val btService: BluetoothService
 ) : ViewModel() {
 
-    /** 连接状态 */
     val isConnected: StateFlow<Boolean> = btService.isConnected
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    /** 已配对设备列表 (来自系统蓝牙) */
+    /** 已配对设备 (Android 系统蓝牙) */
     val pairedDevices: StateFlow<List<BluetoothDevice>> = btService.pairedDevices
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    /** 当前连接的设备名称 */
+    /** 扫描发现的设备 */
+    val discoveredDevices: StateFlow<List<BluetoothDevice>> = btService.discoveredDevices
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** 是否正在扫描 */
+    val isScanning: StateFlow<Boolean> = btService.isScanning
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** 当前连接的设备 */
     private val _connectedDevice = MutableStateFlow<BluetoothDevice?>(null)
     val connectedDevice: StateFlow<BluetoothDevice?> = _connectedDevice
 
-    /** 是否正在扫描 */
-    private val _isScanning = MutableStateFlow(false)
-    val isScanning: StateFlow<Boolean> = _isScanning
-
-    // ── 操作 ──
+    /** 所有可用设备 = 已配对 + 新发现 (去重) */
+    val allDevices: StateFlow<List<BluetoothDevice>> = btService.discoveredDevices
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun startScan() {
-        _isScanning.value = true
         btService.refreshPairedDevices()
-        // 扫描 6 秒后自动停止
-        viewModelScope.launch {
-            kotlinx.coroutines.delay(6000)
-            _isScanning.value = false
-        }
+        btService.startDiscovery()
+    }
+
+    fun cancelScan() {
+        btService.cancelDiscovery()
     }
 
     fun connect(device: BluetoothDevice) {

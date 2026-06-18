@@ -1,6 +1,9 @@
 package com.roboclean.app.ui.screens
 
 import android.bluetooth.BluetoothDevice
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,15 +25,29 @@ import com.roboclean.app.ui.theme.*
 import com.roboclean.app.ui.viewmodel.BluetoothViewModel
 import androidx.compose.ui.res.stringResource
 
-/**
- * 蓝牙管理页面 — 使用真实 BluetoothService
- */
 @Composable
 fun BluetoothScreen(viewModel: BluetoothViewModel) {
     val isConnected by viewModel.isConnected.collectAsState()
     val pairedDevices by viewModel.pairedDevices.collectAsState()
+    val discoveredDevices by viewModel.discoveredDevices.collectAsState()
     val connectedDevice by viewModel.connectedDevice.collectAsState()
     val isScanning by viewModel.isScanning.collectAsState()
+
+    // 合并设备列表: 已连接 > 已配对 > 新发现 (去重)
+    val availableDevices = remember(pairedDevices, discoveredDevices, connectedDevice) {
+        val seen = mutableSetOf<String>()
+        connectedDevice?.address?.let { seen.add(it) }
+        val result = mutableListOf<BluetoothDevice>()
+        // 先加已配对 (去重)
+        pairedDevices.forEach {
+            if (seen.add(it.address)) result.add(it)
+        }
+        // 再加新发现的设备 (不重复)
+        discoveredDevices.forEach {
+            if (seen.add(it.address)) result.add(it)
+        }
+        result
+    }
 
     Column(
         modifier = Modifier
@@ -67,10 +84,39 @@ fun BluetoothScreen(viewModel: BluetoothViewModel) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // 已连接设备
+            // ── 扫描状态指示 ──
+            item {
+                AnimatedVisibility(
+                    visible = isScanning,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = Blue500
+                        )
+                        Text(
+                            text = "正在扫描附近的蓝牙设备...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Blue700
+                        )
+                    }
+                }
+            }
+
+            // ── 已连接设备 ──
             item {
                 Text(
-                    text = stringResource(R.string.connected_devices),
+                    text = if (isConnected) stringResource(R.string.connected_devices)
+                           else "",
                     style = MaterialTheme.typography.titleMedium,
                     color = Success,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -84,7 +130,7 @@ fun BluetoothScreen(viewModel: BluetoothViewModel) {
                         isConnected = true,
                         onDisconnect = { viewModel.disconnect() }
                     )
-                } else {
+                } else if (!isConnected) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -100,7 +146,7 @@ fun BluetoothScreen(viewModel: BluetoothViewModel) {
                 }
             }
 
-            // 可用设备
+            // ── 可用设备 ──
             item {
                 Row(
                     modifier = Modifier
@@ -115,32 +161,27 @@ fun BluetoothScreen(viewModel: BluetoothViewModel) {
                         color = TextPrimary
                     )
                     TextButton(
-                        onClick = { viewModel.startScan() },
+                        onClick = {
+                            if (isScanning) viewModel.cancelScan()
+                            else viewModel.startScan()
+                        },
                         colors = ButtonDefaults.textButtonColors(contentColor = Blue700)
                     ) {
                         Icon(
-                            Icons.Filled.Refresh,
+                            if (isScanning) Icons.Filled.Close else Icons.Filled.Refresh,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.scan_refresh))
+                        Text(
+                            if (isScanning) "停止扫描"
+                            else stringResource(R.string.scan_refresh)
+                        )
                     }
                 }
             }
 
-            if (isScanning) {
-                item {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Blue500,
-                        trackColor = Blue50
-                    )
-                }
-            }
-
-            // 过滤掉已连接的设备
-            val availableDevices = pairedDevices.filter { it.address != connectedDevice?.address }
+            // 无设备提示
             if (availableDevices.isEmpty() && !isScanning) {
                 item {
                     Box(
@@ -158,6 +199,7 @@ fun BluetoothScreen(viewModel: BluetoothViewModel) {
                 }
             }
 
+            // 设备列表
             items(availableDevices, key = { it.address }) { device ->
                 DeviceCard(
                     device = device,
@@ -166,7 +208,25 @@ fun BluetoothScreen(viewModel: BluetoothViewModel) {
                 )
             }
 
-            // 说明文字
+            // 扫描中但还没发现设备
+            if (isScanning && availableDevices.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "扫描中，等待设备出现...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextHint
+                        )
+                    }
+                }
+            }
+
+            // 底部提示卡片
             item {
                 Spacer(modifier = Modifier.height(24.dp))
                 Card(
@@ -187,7 +247,7 @@ fun BluetoothScreen(viewModel: BluetoothViewModel) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = "提示",
+                                text = stringResource(R.string.bt_tip_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = Blue800
                             )
@@ -203,8 +263,6 @@ fun BluetoothScreen(viewModel: BluetoothViewModel) {
         }
     }
 }
-
-// ─── 设备卡片组件 ───
 
 @Composable
 fun DeviceCard(
@@ -246,7 +304,7 @@ fun DeviceCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = device.name ?: "未知设备",
+                    text = device.name ?: stringResource(R.string.unknown_device),
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimary
                 )
@@ -261,10 +319,7 @@ fun DeviceCard(
             if (isConnected) {
                 Button(
                     onClick = { onDisconnect?.invoke() },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Error,
-                        contentColor = White
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Error, contentColor = White),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(stringResource(R.string.bt_disconnect), fontSize = 14.sp)
@@ -272,10 +327,7 @@ fun DeviceCard(
             } else {
                 Button(
                     onClick = { onConnect?.invoke() },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Blue700,
-                        contentColor = White
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Blue700, contentColor = White),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(stringResource(R.string.bt_connect), fontSize = 14.sp)
